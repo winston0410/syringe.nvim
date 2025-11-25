@@ -18,7 +18,7 @@ function M.setup(opts)
   [
       (indented_string_expression (string_fragment) @injection.content )
   ]
-  (#match? @comment "{comment_symbol}+( )*{embedded_language}( )*")
+  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
   (#set! injection.language "{embedded_language}"))
           ]]
       },
@@ -56,7 +56,7 @@ function M.setup(opts)
                          (string
                            (string_content)
                            @injection.content 
-                           (#match? @comment "{comment_symbol}+( )*{embedded_language}( )*")
+                           (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
                            (#set! injection.language "{embedded_language}")))))
           ]]
       },
@@ -69,7 +69,7 @@ function M.setup(opts)
       (string_literal (string_literal_content) @injection.content )
       ((verbatim_string_literal)  @injection.content )
   ]
-  (#match? @comment "{comment_symbol}+( )*{embedded_language}( )*")
+  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
   (#set! injection.language "{embedded_language}"))
           ]]
       },
