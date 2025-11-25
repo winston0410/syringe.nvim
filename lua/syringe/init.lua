@@ -86,7 +86,7 @@ function M.setup(opts)
         bar = true,
         bang = true,
         nargs = "?",
-        complete = function(_, _, _)
+        complete = function(_)
             return completion_args
         end,
     })
@@ -130,6 +130,7 @@ function M.sync()
 
   for language, rule in pairs(M.opts.rules) do
     local injection_dir = vim.fs.joinpath(plugin_root_dir, 'queries', language)
+    vim.fn.delete(injection_dir, "rf")
     vim.fn.mkdir(injection_dir, 'p')
 
     local injection_file = vim.fs.joinpath(injection_dir, 'injections.scm')
