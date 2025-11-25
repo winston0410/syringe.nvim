@@ -16,8 +16,25 @@ function M.setup(opts)
 ; query
 ((comment) @comment .
   [
-      (indented_string_expression (string_fragment) @injection.content )
+    (string_expression
+      (string_fragment) @injection.content)
+    (indented_string_expression
+      (string_fragment) @injection.content)
   ]
+  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
+  (#set! injection.language "{embedded_language}"))
+          ]]
+      },
+      rust = {
+          query = [[ 
+; query
+((line_comment) @comment .
+(
+  [
+        (raw_string_literal (string_content) @injection.content)
+        (string_literal (string_content) @injection.content) 
+  ]
+)
   (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
   (#set! injection.language "{embedded_language}"))
           ]]
@@ -30,18 +47,17 @@ function M.setup(opts)
   [
     (expression_list
       [
-        (raw_string_literal)
-        (interpreted_string_literal)
+        (raw_string_literal (raw_string_literal_content) @injection.content)
+        (interpreted_string_literal (interpreted_string_literal_content)@injection.content)
       ]
     )
     (expression_statement
       [
-        (raw_string_literal)
-        (interpreted_string_literal)
+        (raw_string_literal (raw_string_literal_content) @injection.content)
+        (interpreted_string_literal (interpreted_string_literal_content) @injection.content)
       ]
     )
   ]
-  @injection.content
 )
   (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
   (#set! injection.language "{embedded_language}"))
