@@ -8,16 +8,41 @@ function M.setup(opts)
       'javascript',
       'sql',
       'json',
+      'lua',
     },
     rules = {
+      nix = {
+          query = [[
+; query
+((comment) @comment .
+  [
+      (indented_string_expression (string_fragment) @injection.content )
+  ]
+  (#match? @comment "{comment_symbol}+( )*{embedded_language}( )*")
+  (#set! injection.language "{embedded_language}"))
+          ]]
+      },
+      python = {
+          query = [[ 
+; query
+((comment) @comment .
+           (expression_statement
+             (assignment right: 
+                         (string
+                           (string_content)
+                           @injection.content 
+                           (#match? @comment "{comment_symbol}+( )*{embedded_language}( )*")
+                           (#set! injection.language "{embedded_language}")))))
+          ]]
+      },
       c_sharp = {
           query = [[ 
 ; query
-; injection for {embedded_language}
 ((comment) @comment .
   [
       (raw_string_literal (raw_string_content) @injection.content )
       (string_literal (string_literal_content) @injection.content )
+      ((verbatim_string_literal)  @injection.content )
   ]
   (#match? @comment "{comment_symbol}+( )*{embedded_language}( )*")
   (#set! injection.language "{embedded_language}"))
@@ -26,7 +51,6 @@ function M.setup(opts)
       typescript = {
         query = [[
 ; query
-; injection for {embedded_language}
 ((comment) @comment .
   [(string
         (string_fragment) @injection.content)
@@ -39,7 +63,6 @@ function M.setup(opts)
       javascript = {
         query = [[
 ; query
-; injection for {embedded_language}
 ((comment) @comment .
   [(string
         (string_fragment) @injection.content)
@@ -51,6 +74,22 @@ function M.setup(opts)
       },
     },
   }, opts or {})
+
+    local completion_args = {"sync"}
+
+    vim.api.nvim_create_user_command("Syringe", function (cmd)
+        if cmd.args == "sync" then
+            M.sync()
+        end
+    end, {
+        desc = "Syringe",
+        bar = true,
+        bang = true,
+        nargs = "?",
+        complete = function(_, _, _)
+            return completion_args
+        end,
+    })
 end
 
 ---@param language string Treesitter parser name, which is not always the same with the value of filetype in Neovim for that language.
@@ -85,7 +124,7 @@ function M.generate_injections(language)
   return result
 end
 
-function M.install()
+function M.sync()
   local plugin_root_dir =
     debug.getinfo(1).source:sub(2, string.len('/lua/syringe/init.lua') * -1 - 1)
 
