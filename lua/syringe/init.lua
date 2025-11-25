@@ -22,6 +22,31 @@ function M.setup(opts)
   (#set! injection.language "{embedded_language}"))
           ]]
       },
+      go = {
+          query = [[ 
+; query
+((comment) @comment .
+(
+  [
+    (expression_list
+      [
+        (raw_string_literal)
+        (interpreted_string_literal)
+      ]
+    )
+    (expression_statement
+      [
+        (raw_string_literal)
+        (interpreted_string_literal)
+      ]
+    )
+  ]
+  @injection.content
+)
+  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
+  (#set! injection.language "{embedded_language}"))
+          ]]
+      },
       python = {
           query = [[ 
 ; query
