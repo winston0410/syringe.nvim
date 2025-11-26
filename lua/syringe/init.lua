@@ -1,16 +1,14 @@
-local M = {}
-
 ---@class SyringeLanguageRule
 ---@field query string
 
 ---@class SyringeOpts
 ---@field embedded_languages string[]?
+---@field injection_prefix string?
 ---@field rules table<string, SyringeLanguageRule>?
 
----Setup Syringe
----@param opts SyringeOpts|nil
-function M.setup(opts)
-  M.opts = vim.tbl_deep_extend('force', {
+local M = {
+  opts = {
+    injection_prefix = '',
     embedded_languages = {
       'html',
       'css',
@@ -21,7 +19,7 @@ function M.setup(opts)
     },
     rules = {
       nix = {
-          query = [[
+        query = [[
 ; query
 ((comment) @comment .
   [
@@ -32,10 +30,10 @@ function M.setup(opts)
   ]
   (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
   (#set! injection.language "{embedded_language}"))
-          ]]
+          ]],
       },
       lua = {
-          query = [[ 
+        query = [[ 
 ; query
 ((comment) @comment .
 (
@@ -47,10 +45,10 @@ function M.setup(opts)
 )
   (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
   (#set! injection.language "{embedded_language}"))
-          ]]
+          ]],
       },
       rust = {
-          query = [[ 
+        query = [[ 
 ; query
 ((line_comment) @comment .
 (
@@ -71,10 +69,10 @@ function M.setup(opts)
   ; not sure if there is a good way to get block comment in Nvim
   (#match? @comment "^/\\*+( )*{embedded_language}( )*\\*/")
   (#set! injection.language "{embedded_language}"))
-          ]]
+          ]],
       },
       go = {
-          query = [[ 
+        query = [[ 
 ; query
 ((comment) @comment .
 (
@@ -95,10 +93,10 @@ function M.setup(opts)
 )
   (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
   (#set! injection.language "{embedded_language}"))
-          ]]
+          ]],
       },
       python = {
-          query = [[ 
+        query = [[ 
 ; query
 ((comment) @comment .
            (expression_statement
@@ -108,10 +106,10 @@ function M.setup(opts)
                            @injection.content 
                            (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
                            (#set! injection.language "{embedded_language}")))))
-          ]]
+          ]],
       },
       c_sharp = {
-          query = [[ 
+        query = [[ 
 ; query
 ((comment) @comment .
   [
@@ -121,7 +119,7 @@ function M.setup(opts)
   ]
   (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
   (#set! injection.language "{embedded_language}"))
-          ]]
+          ]],
       },
       typescript = {
         query = [[
@@ -188,23 +186,28 @@ function M.setup(opts)
             ]],
       },
     },
-  }, opts or {})
+  },
+}
 
-    local completion_args = {"sync"}
+---@param opts SyringeOpts|nil
+function M.setup(opts)
+  M.opts = vim.tbl_deep_extend('force', M.opts, opts or {})
 
-    vim.api.nvim_create_user_command("Syringe", function (cmd)
-        if cmd.args == "sync" then
-            M.sync()
-        end
-    end, {
-        desc = "Syringe",
-        bar = true,
-        bang = true,
-        nargs = "?",
-        complete = function(_)
-            return completion_args
-        end,
-    })
+  local completion_args = { 'sync' }
+
+  vim.api.nvim_create_user_command('Syringe', function(cmd)
+    if cmd.args == 'sync' then
+      M.sync()
+    end
+  end, {
+    desc = 'Syringe',
+    bar = true,
+    bang = true,
+    nargs = '?',
+    complete = function(_)
+      return completion_args
+    end,
+  })
 end
 
 ---@param language string Treesitter parser name, which is not always the same with the value of filetype in Neovim for that language.
@@ -212,11 +215,11 @@ local function get_comment_string(language)
   local result = nil
   local filetypes = vim.treesitter.language.get_filetypes(language)
   for _, ft in ipairs(filetypes) do
-      local cs = vim.filetype.get_option(ft, 'commentstring')
-      if cs and cs ~= '' then
-          result = cs
-          break
-      end
+    local cs = vim.filetype.get_option(ft, 'commentstring')
+    if cs and cs ~= '' then
+      result = cs
+      break
+    end
   end
 
   return result
@@ -225,16 +228,19 @@ end
 ---@param language string Treesitter parser name, which is not always the same with the value of filetype in Neovim for that language.
 function M.generate_injections(language)
   local commentstring = get_comment_string(language)
-  assert(type(commentstring) == "string", string.format("vim.bo.commentstring of filetype %s is not string", commentstring))
+  assert(
+    type(commentstring) == 'string',
+    string.format('vim.bo.commentstring of filetype %s is not string', commentstring)
+  )
   -- REF https://stackoverflow.com/a/27455195
-  local comment_symbol = string.format(commentstring, ""):gsub('^%s*(.-)%s*$', '%1')
+  local comment_symbol = string.format(commentstring, ''):gsub('^%s*(.-)%s*$', '%1')
 
   local result = ''
   for _, embedded_language in pairs(M.opts.embedded_languages) do
     result = result
       .. M.opts.rules[language].query
         :gsub('{embedded_language}', embedded_language)
-        :gsub('{comment_symbol}', comment_symbol)
+        :gsub('{comment_symbol}', M.opts.injection_prefix .. comment_symbol)
   end
   return result
 end
@@ -245,7 +251,7 @@ function M.sync()
 
   for language, _ in pairs(M.opts.rules) do
     local injection_dir = vim.fs.joinpath(plugin_root_dir, 'queries', language)
-    vim.fn.delete(injection_dir, "rf")
+    vim.fn.delete(injection_dir, 'rf')
     vim.fn.mkdir(injection_dir, 'p')
 
     local injection_file = vim.fs.joinpath(injection_dir, 'injections.scm')
