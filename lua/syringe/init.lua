@@ -25,6 +25,21 @@ function M.setup(opts)
   (#set! injection.language "{embedded_language}"))
           ]]
       },
+      lua = {
+          query = [[ 
+; query
+((comment) @comment .
+(
+  [
+        (expression_list (string (string_content) @injection.content))
+        (assignment_statement (expression_list (string (string_content) @injection.content)))
+        (variable_declaration (assignment_statement (expression_list (string (string_content) @injection.content))))
+  ]
+)
+  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
+  (#set! injection.language "{embedded_language}"))
+          ]]
+      },
       rust = {
           query = [[ 
 ; query
@@ -36,6 +51,16 @@ function M.setup(opts)
   ]
 )
   (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
+  (#set! injection.language "{embedded_language}"))
+((block_comment) @comment .
+(
+  [
+        (raw_string_literal (string_content) @injection.content)
+        (string_literal (string_content) @injection.content) 
+  ]
+)
+  ; not sure if there is a good way to get block comment in Nvim
+  (#match? @comment "^/\\*+( )*{embedded_language}( )*\\*/")
   (#set! injection.language "{embedded_language}"))
           ]]
       },
@@ -93,10 +118,30 @@ function M.setup(opts)
         query = [[
 ; query
 ((comment) @comment .
-  [(string
+  [
+ (expression_statement
+   (assignment_expression
+     right: [
+      (string
+            (string_fragment) @injection.content)
+      (template_string
+            (string_fragment) @injection.content)
+         ])
+   )
+ (lexical_declaration
+   (variable_declarator
+     value: [
+      (string
+            (string_fragment) @injection.content)
+      (template_string
+            (string_fragment) @injection.content)
+         ])
+   )
+  (string
         (string_fragment) @injection.content)
   (template_string
-        (string_fragment) @injection.content)]
+        (string_fragment) @injection.content)
+  ]
   (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
   (#set! injection.language "{embedded_language}"))
             ]],
@@ -105,10 +150,30 @@ function M.setup(opts)
         query = [[
 ; query
 ((comment) @comment .
-  [(string
+  [
+ (expression_statement
+   (assignment_expression
+     right: [
+      (string
+            (string_fragment) @injection.content)
+      (template_string
+            (string_fragment) @injection.content)
+         ])
+   )
+ (lexical_declaration
+   (variable_declarator
+     value: [
+      (string
+            (string_fragment) @injection.content)
+      (template_string
+            (string_fragment) @injection.content)
+         ])
+   )
+  (string
         (string_fragment) @injection.content)
   (template_string
-        (string_fragment) @injection.content)]
+        (string_fragment) @injection.content)
+  ]
   (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
   (#set! injection.language "{embedded_language}"))
             ]],
