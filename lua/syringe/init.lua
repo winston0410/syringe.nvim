@@ -1,5 +1,14 @@
 local M = {}
 
+---@class SyringeLanguageRule
+---@field query string
+
+---@class SyringeOpts
+---@field embedded_languages string[]?
+---@field rules table<string, SyringeLanguageRule>?
+
+---Setup Syringe
+---@param opts SyringeOpts|nil
 function M.setup(opts)
   M.opts = vim.tbl_deep_extend('force', {
     embedded_languages = {
