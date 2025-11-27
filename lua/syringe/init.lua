@@ -27,21 +27,10 @@ local M = {
       (string_content) @injection.content)
     (assignment right: (string
       (string_content) @injection.content))
-  ]
-  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
-  (#set! injection.language "{embedded_language}"))
-          ]],
-      },
-      yaml = {
-        query = [[
-; query
-((comment) @comment .
-  [
-      (block_mapping_pair value: [ 
-          ; FIXME quote is not excluded, the highlight might not work. Not sure what can we do about it
-          (block_node (block_scalar) @injection.content) 
-          (flow_node [ (single_quote_scalar) @injection.content (double_quote_scalar) @injection.content ])
-      ])
+    ((assignment right: (heredoc_beginning)) 
+        (heredoc_body
+          (heredoc_content) @injection.content)
+    )
   ]
   (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
   (#set! injection.language "{embedded_language}"))
