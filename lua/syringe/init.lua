@@ -288,8 +288,7 @@ end
 function M.get_supported_host_languages()
   local results = {}
   for language, _ in pairs(M.opts.rules) do
-    local filetypes = vim.treesitter.language.get_filetypes(language)
-    vim.list_extend(results, filetypes)
+      table.insert(results, language)
   end
   return results
 end
