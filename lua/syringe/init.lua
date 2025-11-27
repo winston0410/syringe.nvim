@@ -285,4 +285,15 @@ function M.sync()
   vim.notify('[syringe] Queries injected', vim.log.levels.INFO)
 end
 
+function M.get_supported_host_languages()
+  local results = {}
+  for language, _ in pairs(M.opts.rules) do
+    local filetypes = vim.treesitter.language.get_filetypes(language)
+    for _, filetype in pairs(filetypes) do
+      table.insert(results, filetype)
+    end
+  end
+  return results
+end
+
 return M
