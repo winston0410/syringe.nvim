@@ -1,13 +1,13 @@
 ---@class SyringeLanguageRule
----@field query string
+---@field query string The treesitter query for injection
 
 ---@class SyringeOpts
----@field injection_prefix string?
+---@field injection_prefix string? The optional prefix before the name of the language in comment. This will pass to the [Vim RegExp](https://neovim.io/doc/user/pattern.html#search-pattern) directly, and you need to escape any special character yourself.
 ---@field rules table<string, SyringeLanguageRule>?
 
 local M = {
   opts = {
-    -- injection_prefix = '',
+    injection_prefix = '',
     rules = {
       ruby = {
         query = [[
@@ -23,7 +23,7 @@ local M = {
           (heredoc_content) @injection.content)
     )
   ]
-  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
+  (#gsub! @injection.language "{comment_symbol}%s*{injection_prefix}([%w%p]+)%s*" "%1"))
           ]],
       },
       nix = {
@@ -36,7 +36,7 @@ local M = {
     (indented_string_expression
       (string_fragment) @injection.content)
   ]
-  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
+  (#gsub! @injection.language "{comment_symbol}%s*{injection_prefix}([%w%p]+)%s*" "%1"))
           ]],
       },
       lua = {
@@ -50,7 +50,7 @@ local M = {
         (variable_declaration (assignment_statement (expression_list (string (string_content) @injection.content))))
   ]
 )
-  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
+  (#gsub! @injection.language "{comment_symbol}%s*{injection_prefix}([%w%p]+)%s*" "%1"))
           ]],
       },
       rust = {
@@ -63,7 +63,7 @@ local M = {
         (string_literal (string_content) @injection.content) 
   ]
 )
-  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
+  (#gsub! @injection.language "{comment_symbol}%s*{injection_prefix}([%w%p]+)%s*" "%1"))
 ((block_comment) @injection.language .
 (
   [
@@ -72,7 +72,7 @@ local M = {
   ]
 )
   ; not sure if there is a good way to get block comment in Nvim
-(#gsub! @injection.language "/%*%s*([%w%p]+)%s*%*/" "%1"))
+(#gsub! @injection.language "/%*%s*{injection_prefix}([%w%p]+)%s*%*/" "%1"))
           ]],
       },
       go = {
@@ -95,19 +95,22 @@ local M = {
     )
   ]
 )
-  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
+  (#gsub! @injection.language "{comment_symbol}%s*{injection_prefix}([%w%p]+)%s*" "%1"))
           ]],
       },
       python = {
         query = [[ 
 ; query
 ((comment) @injection.language .
-           (expression_statement
-             (assignment right: 
-                         (string
-                           (string_content)
-                           @injection.content 
-                           (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1")))))
+    (expression_statement
+        (assignment right: 
+            (string
+                (string_content)
+                    @injection.content 
+                        (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
+        )
+    )
+)
           ]],
       },
       c_sharp = {
@@ -119,7 +122,7 @@ local M = {
       (string_literal (string_literal_content) @injection.content )
       ((verbatim_string_literal)  @injection.content )
   ]
-  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
+  (#gsub! @injection.language "{comment_symbol}%s*{injection_prefix}([%w%p]+)%s*" "%1"))
           ]],
       },
       typescript = {
@@ -150,7 +153,7 @@ local M = {
   (template_string
         (string_fragment) @injection.content)
   ]
-  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
+  (#gsub! @injection.language "{comment_symbol}%s*{injection_prefix}([%w%p]+)%s*" "%1"))
             ]],
       },
       javascript = {
@@ -181,7 +184,7 @@ local M = {
   (template_string
         (string_fragment) @injection.content)
   ]
-  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
+  (#gsub! @injection.language "{comment_symbol}%s*{injection_prefix}([%w%p]+)%s*" "%1"))
             ]],
       },
     },
@@ -238,6 +241,7 @@ function M.generate_injections(language)
   result = result
     .. M.opts.rules[language].query
       :gsub('{comment_symbol}',  comment_symbol)
+      :gsub('{injection_prefix}',  M.opts.injection_prefix)
   return result
 end
 
