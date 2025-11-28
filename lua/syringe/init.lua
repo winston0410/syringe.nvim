@@ -2,26 +2,17 @@
 ---@field query string
 
 ---@class SyringeOpts
----@field embedded_languages string[]?
 ---@field injection_prefix string?
 ---@field rules table<string, SyringeLanguageRule>?
 
 local M = {
   opts = {
-    injection_prefix = '',
-    embedded_languages = {
-      'html',
-      'css',
-      'javascript',
-      'sql',
-      'json',
-      'lua',
-    },
+    -- injection_prefix = '',
     rules = {
       ruby = {
         query = [[
 ; query
-((comment) @comment .
+((comment) @injection.language .
   [
     (string
       (string_content) @injection.content)
@@ -32,28 +23,26 @@ local M = {
           (heredoc_content) @injection.content)
     )
   ]
-  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
-  (#set! injection.language "{embedded_language}"))
+  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
           ]],
       },
       nix = {
         query = [[
 ; query
-((comment) @comment .
+((comment) @injection.language .
   [
     (string_expression
       (string_fragment) @injection.content)
     (indented_string_expression
       (string_fragment) @injection.content)
   ]
-  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
-  (#set! injection.language "{embedded_language}"))
+  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
           ]],
       },
       lua = {
         query = [[ 
 ; query
-((comment) @comment .
+((comment) @injection.language .
 (
   [
         (expression_list (string (string_content) @injection.content))
@@ -61,23 +50,21 @@ local M = {
         (variable_declaration (assignment_statement (expression_list (string (string_content) @injection.content))))
   ]
 )
-  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
-  (#set! injection.language "{embedded_language}"))
+  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
           ]],
       },
       rust = {
         query = [[ 
 ; query
-((line_comment) @comment .
+((line_comment) @injection.language .
 (
   [
         (raw_string_literal (string_content) @injection.content)
         (string_literal (string_content) @injection.content) 
   ]
 )
-  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
-  (#set! injection.language "{embedded_language}"))
-((block_comment) @comment .
+  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
+((block_comment) @injection.language .
 (
   [
         (raw_string_literal (string_content) @injection.content)
@@ -85,14 +72,13 @@ local M = {
   ]
 )
   ; not sure if there is a good way to get block comment in Nvim
-  (#match? @comment "^/\\*+( )*{embedded_language}( )*\\*/")
-  (#set! injection.language "{embedded_language}"))
+(#gsub! @injection.language "/%*%s*([%w%p]+)%s*%*/" "%1"))
           ]],
       },
       go = {
         query = [[ 
 ; query
-((comment) @comment .
+((comment) @injection.language .
 (
   [
     (expression_list
@@ -109,40 +95,37 @@ local M = {
     )
   ]
 )
-  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
-  (#set! injection.language "{embedded_language}"))
+  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
           ]],
       },
       python = {
         query = [[ 
 ; query
-((comment) @comment .
+((comment) @injection.language .
            (expression_statement
              (assignment right: 
                          (string
                            (string_content)
                            @injection.content 
-                           (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
-                           (#set! injection.language "{embedded_language}")))))
+                           (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1")))))
           ]],
       },
       c_sharp = {
         query = [[ 
 ; query
-((comment) @comment .
+((comment) @injection.language .
   [
       (raw_string_literal (raw_string_content) @injection.content )
       (string_literal (string_literal_content) @injection.content )
       ((verbatim_string_literal)  @injection.content )
   ]
-  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
-  (#set! injection.language "{embedded_language}"))
+  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
           ]],
       },
       typescript = {
         query = [[
 ; query
-((comment) @comment .
+((comment) @injection.language .
   [
  (expression_statement
    (assignment_expression
@@ -167,14 +150,13 @@ local M = {
   (template_string
         (string_fragment) @injection.content)
   ]
-  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
-  (#set! injection.language "{embedded_language}"))
+  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
             ]],
       },
       javascript = {
         query = [[
 ; query
-((comment) @comment .
+((comment) @injection.language .
   [
  (expression_statement
    (assignment_expression
@@ -199,8 +181,7 @@ local M = {
   (template_string
         (string_fragment) @injection.content)
   ]
-  (#match? @comment "^{comment_symbol}+( )*{embedded_language}( )*")
-  (#set! injection.language "{embedded_language}"))
+  (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
             ]],
       },
     },
@@ -254,12 +235,9 @@ function M.generate_injections(language)
   local comment_symbol = string.format(commentstring, ''):gsub('^%s*(.-)%s*$', '%1')
 
   local result = ''
-  for _, embedded_language in pairs(M.opts.embedded_languages) do
-    result = result
-      .. M.opts.rules[language].query
-        :gsub('{embedded_language}', embedded_language)
-        :gsub('{comment_symbol}', M.opts.injection_prefix .. comment_symbol)
-  end
+  result = result
+    .. M.opts.rules[language].query
+      :gsub('{comment_symbol}',  comment_symbol)
   return result
 end
 
