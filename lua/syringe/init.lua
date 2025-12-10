@@ -111,6 +111,12 @@ local M = {
         )
     )
 )
+((comment) @injection.language .
+    (string
+        (string_content)
+            @injection.content 
+                (#gsub! @injection.language "{comment_symbol}%s*([%w%p]+)%s*" "%1"))
+)
           ]],
       },
       c_sharp = {
