@@ -127,6 +127,21 @@ local M = {
       (raw_string_literal (raw_string_content) @injection.content )
       (string_literal (string_literal_content) @injection.content )
       ((verbatim_string_literal)  @injection.content )
+      (argument [
+              (raw_string_literal (raw_string_content) @injection.content )
+              (string_literal (string_literal_content) @injection.content )
+              ((verbatim_string_literal)  @injection.content )
+        ])
+      (object_creation_expression arguments: (argument_list (argument [
+              (raw_string_literal (raw_string_content) @injection.content )
+              (string_literal (string_literal_content) @injection.content )
+              ((verbatim_string_literal)  @injection.content )
+        ])))
+      (expression_statement (object_creation_expression arguments: (argument_list (argument [
+              (raw_string_literal (raw_string_content) @injection.content )
+              (string_literal (string_literal_content) @injection.content )
+              ((verbatim_string_literal)  @injection.content )
+        ]))))
   ]
   (#gsub! @injection.language "{comment_symbol}%s*{injection_prefix}([%w%p]+)%s*" "%1"))
           ]],
